@@ -1,4 +1,4 @@
-""" 
+"""
 author:-aam35
 """
 import os
@@ -6,13 +6,12 @@ os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
 
 import numpy as np
 import tensorflow as tf
-tf.enable_eager_execution()
 import time
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix
 
 import utils
-tf.executing_eagerly()
+
 # Define paramaters for the model
 learning_rate = None
 batch_size = None
@@ -21,24 +20,22 @@ n_train = None
 n_test = None
 
 # Step 1: Read in data
-fmnist_folder = 'None'
-#Create dataset load function [Refer fashion mnist github page for util function]
-#Create train,validation,test split
-#train, val, test = utils.read_fmnist(fmnist_folder, flatten=True)
+from tensorflow.keras.datasets import fashion_mnist
 
-# Step 2: Create datasets and iterator
-# create training Dataset and batch it
-train_data = None
+(train_images, train_labels), (test_images, test_labels) = fashion_mnist.load_data()
+train_images, test_images = train_images / 255.0, test_images / 255.0  # Normalize data
 
-# create testing Dataset and batch it
-test_data = None
-#############################
-########## TO DO ############
-#############################
+
+val_split = 0.1
+num_val = int(train_images.shape[0] * val_split)
+val_images = train_images[:num_val]
+val_labels = train_labels[:num_val]
+train_images_split = train_images[num_val:]
+train_labels_split = train_labels[num_val:]
 
 
 # create one iterator and initialize it with different datasets
-iterator = tf.data.Iterator.from_structure(train_data.output_types, 
+iterator = tf.data.Iterator.from_structure(train_data.output_types,
                                            train_data.output_shapes)
 img, label = iterator.get_next()
 
@@ -95,7 +92,7 @@ for i in range(n_epochs):
 	################################
 	###TO DO#####
 	############
-	
+
 #Step 9: Get the Final test accuracy
 
 #Step 10: Helper function to plot images in 3*3 grid
@@ -103,7 +100,7 @@ for i in range(n_epochs):
 
 def plot_images(images, y, yhat=None):
     assert len(images) == len(y) == 9
-    
+
     # Create figure with 3x3 sub-plots.
     fig, axes = plt.subplots(3, 3)
     fig.subplots_adjust(hspace=0.3, wspace=0.3)
@@ -119,13 +116,13 @@ def plot_images(images, y, yhat=None):
             xlabel = "True: {0}, Pred: {1}".format(y[i], yhat[i])
 
         ax.set_xlabel(xlabel)
-        
+
         # Remove ticks from the plot.
         ax.set_xticks([])
         ax.set_yticks([])
     plt.show()
 
-#Get image from test set 
+#Get image from test set
 images = test_data[0:9]
 
 # Get the true classes for those images.
@@ -135,12 +132,12 @@ y = test_class[0:9]
 plot_images(images=images, y=y)
 
 
-#Second plot weights 
+#Second plot weights
 
 def plot_weights(w=None):
     # Get the values for the weights from the TensorFlow variable.
     #TO DO ####
-    
+
     # Get the lowest and highest values for the weights.
     # This is used to correct the colour intensity across
     # the images so they can be compared with each other.
@@ -169,7 +166,7 @@ def plot_weights(w=None):
         # Remove ticks from each sub-plot.
         ax.set_xticks([])
         ax.set_yticks([])
-        
+
     # Ensure the plot is shown correctly with multiple plots
     # in a single Notebook cell.
     plt.show()
