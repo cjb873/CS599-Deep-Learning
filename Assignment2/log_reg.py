@@ -19,16 +19,21 @@ n_test = 200
 # Step 1: Read in data
 from tensorflow.keras.datasets import fashion_mnist
 
-(train_images, train_labels), (test_images, test_labels) = fashion_mnist.load_data()
-train_images, test_images = train_images / 255.0, test_images / 255.0  # Normalize data
-train_data, test_data = train_images, test_images
+def get_data(val_split=0.1):
+    (train_images, train_labels), (test_images, test_labels) = fashion_mnist.load_data()
+    train_images, test_images = train_images / 255.0, test_images / 255.0  # Normalize data
 
-val_split = 0.1
-num_val = int(train_images.shape[0] * val_split)
-val_images = train_images[:num_val]
-val_labels = train_labels[:num_val]
-train_images_split = train_images[num_val:]
-train_labels_split = train_labels[num_val:]
+    num_val = int(train_images.shape[0] * val_split)
+    val_images = train_images[:num_val]
+    val_labels = train_labels[:num_val]
+    train_images_split = train_images[num_val:]
+    train_labels_split = train_labels[num_val:]
+    return train_images_split, train_labels_split, val_images, val_labels, test_images, test_labels
+
+
+train_images_split, train_labels_split, val_images, val_labels, test_images, test_labels = get_data()
+
+train_data, test_data = train_images_split, test_images
 
 # Step 3: create weights and bias
 # w is initialized to random variables with mean of 0, stddev of 0.01
@@ -52,8 +57,8 @@ logits = None
 class LogisticRegressionModel(tf.Module):
     def __init__(self):
         super().__init__()
-        self.W = w
-        self.b = b
+        self.W = tf.Variable(tf.random.normal([28*28, 10], stddev=0.01), name='weights')
+        self.b = tf.Variable(tf.zeros([10]), name="biases")
 
     def __call__(self, x):
         x = tf.cast(x, tf.float32)
@@ -103,11 +108,12 @@ def train_step(model, images, labels, optimizer, lambda_reg=0.0):
     optimizer.apply_gradients(zip(grads, [model.W, model.b]))
     return loss
 
-def train_model(optimizer, lambda_reg=0.0, num_epochs=20, batch_size=128):
+def train_model(optimizer, lambda_reg=0.0, num_epochs=20, batch_size=128, split=0.1):
     tf.random.set_seed(99111100121)
     # Create a new model instance (fresh initialization)
     model = LogisticRegressionModel()
     # Prepare tf.data datasets for training and validation
+    train_images_split, train_labels_split, val_images, val_labels, test_images, test_labels = get_data(split)
     train_dataset = tf.data.Dataset.from_tensor_slices((train_images_split, train_labels_split))
     train_dataset = train_dataset.shuffle(buffer_size=1024).batch(batch_size)
     val_dataset = tf.data.Dataset.from_tensor_slices((val_images, val_labels))
@@ -257,7 +263,7 @@ optimizers_to_try = {
 epochs_to_try = {
     "1": 1,
     "10": 10,
-    "100": 100
+#    "100": 100
 }
 
 bs_to_try = {
@@ -267,13 +273,21 @@ bs_to_try = {
     "512": 512
 }
 
+splits_to_try = {
+    "0": 0.,
+    "0.1": 0.1,
+    "0.2": 0.2,
+    "0.5": 0.5
+}
+
 lambda_reg = 0.10  # Change to 0.0 to see training without regularization.
 num_epochs = 10  # Adjust as needed
 
 def train_and_plot(in_dict, hyperparam):
-    opt = optimizers_to_try["Adam"]
+    opt = tf.optimizers.Adam(learning_rate=0.001)
     num_epochs = epochs_to_try["10"]
     bs = bs_to_try["128"]
+    split = splits_to_try["0.1"]
 
     history_dict = {}
     for name, item in in_dict.items():
@@ -284,10 +298,12 @@ def train_and_plot(in_dict, hyperparam):
             num_epochs = item
         elif hyperparam == "bs":
             bs = item
+        elif hyperparam == "split":
+            split = item
 
         print(f"Training with {name} (lambda_reg={lambda_reg})")
         # Train a new model for each optimizer.
-        history = train_model(opt, lambda_reg=lambda_reg, num_epochs=num_epochs, batch_size=bs)[1]
+        history = train_model(opt, lambda_reg=lambda_reg, num_epochs=num_epochs, batch_size=bs, split=split)[1]
         history_dict[name] = history
     epochs = range(1, num_epochs + 1)
     fig, axs = plt.subplots(2, 1, figsize=(10, 10))
@@ -316,4 +332,4 @@ def train_and_plot(in_dict, hyperparam):
 train_and_plot(optimizers_to_try, "opt")
 train_and_plot(epochs_to_try, "epochs")
 train_and_plot(bs_to_try, "bs")
-
+train_and_plot(splits_to_try, "split")
