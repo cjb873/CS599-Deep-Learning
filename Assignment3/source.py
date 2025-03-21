@@ -162,11 +162,12 @@ def log_results(acc, bwt, config):
     return new_result
 
 
-loss_types = ["NLL", "L1", "L2", "L1+L2"]
-optimizers = {"SGD": torch.optim.SGD, "Adam": torch.optim.Adam,
-              "RMSProp": torch.optim.RMSprop}
+loss_types = ["NLL", "L2", "L1", "L1+L2"]
+optimizers = {"Adam": torch.optim.Adam, "SGD": torch.optim.SGD,
+              "RMSProp": torch.optim.RMSprop
+              }
 depths = [2, 3, 4]
-dropout_rates = [0.2, 0.4, 0.6]
+dropout_rates = [0.0, 0.2, 0.4, 0.6]
 
 results = pd.DataFrame(columns=["Loss", "Optimizer", "Depth",
                                 "Dropout", "Acc", "BWT"])
@@ -175,6 +176,7 @@ for loss_t in loss_types:
     for optim in optimizers.keys():
         for depth in depths:
             for rate in dropout_rates:
+                torch.random.manual_seed(67111100121)
                 model = MLP(depth, rate, optimizers[optim])
 
                 R = run_sequential_training(model, loss_t)
@@ -184,3 +186,19 @@ for loss_t in loss_types:
 
                 new_r = log_results(acc, bwt, (loss_t, optim, depth, rate))
                 results = pd.concat([results, new_r], ignore_index=True)
+
+
+
+task0 = R[:,0].numpy()
+
+import matplotlib.pyplot as plt
+
+
+plt.plot(task0)
+plt.xlabel("Task Number")
+plt.ylabel("Accuracy on Initial Task")
+
+plt.savefig("results.png", dpi=300)
+plt.show()
+
+
